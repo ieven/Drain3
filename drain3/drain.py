@@ -4,9 +4,11 @@ Author      : LogPAI team
 Modified by : david.ohana@ibm.com, moshikh@il.ibm.com
 License     : MIT
 """
-from cachetools import LRUCache, Cache
-from drain3.simple_profiler import Profiler, NullProfiler
 from typing import List, Dict
+
+from cachetools import LRUCache, Cache
+
+from drain3.simple_profiler import Profiler, NullProfiler
 
 param_str = '<*>'
 
@@ -23,15 +25,15 @@ class LogCluster:
         return ' '.join(self.log_template_tokens)
 
     def __str__(self):
-        return f"{self.cluster_id} (size {self.size}): {self.get_template()}"
+        return f"ID={str(self.cluster_id).ljust(5)} : size={str(self.size).ljust(10)}: {self.get_template()}"
 
 
 class Node:
     __slots__ = ["key_to_child_node", "cluster_ids"]
 
     def __init__(self):
-        self.key_to_child_node : Dict[str, Node] = {}
-        self.cluster_ids : List[int] = []
+        self.key_to_child_node: Dict[str, Node] = {}
+        self.cluster_ids: List[int] = []
 
 
 class Drain:
@@ -61,6 +63,8 @@ class Drain:
         self.profiler = profiler
         self.extra_delimiters = extra_delimiters
         self.max_clusters = max_clusters
+
+        # key: int, value: LogCluster
         self.id_to_cluster = {} if max_clusters is None else LRUCache(maxsize=max_clusters)
         self.clusters_counter = 0
 
@@ -76,7 +80,7 @@ class Drain:
 
         # at first level, children are grouped by token (word) count
         token_count = len(tokens)
-        parent_node = root_node.key_to_child_node.get(token_count)
+        parent_node = root_node.key_to_child_node.get(str(token_count))
 
         # no template with same token count yet
         if parent_node is None:
@@ -110,12 +114,12 @@ class Drain:
         return cluster
 
     def add_seq_to_prefix_tree(self, root_node, cluster: LogCluster):
-        token_count = len(cluster.log_template_tokens)
-        if token_count not in root_node.key_to_child_node:
+        token_count_str = str(len(cluster.log_template_tokens))
+        if token_count_str not in root_node.key_to_child_node:
             first_layer_node = Node()
-            root_node.key_to_child_node[token_count] = first_layer_node
+            root_node.key_to_child_node[token_count_str] = first_layer_node
         else:
-            first_layer_node = root_node.key_to_child_node[token_count]
+            first_layer_node = root_node.key_to_child_node[token_count_str]
 
         parent_node = first_layer_node
 
@@ -127,11 +131,9 @@ class Drain:
         current_depth = 1
         for token in cluster.log_template_tokens:
 
-            # Add current log cluster to the leaf node
-            at_max_depth = current_depth == self.depth
-            is_last_token = current_depth == token_count
-            if at_max_depth or is_last_token:
-                # Clean up stale clusters before adding a new one.
+            # if at max depth or this is last token in template - add current log cluster to the leaf node
+            if current_depth == self.depth or str(current_depth) == token_count_str:
+                # clean up stale clusters before adding a new one.
                 new_cluster_ids = [cluster.cluster_id]
                 for cluster_id in parent_node.cluster_ids:
                     if cluster_id in self.id_to_cluster:
@@ -139,7 +141,7 @@ class Drain:
                 parent_node.cluster_ids = new_cluster_ids
                 break
 
-            # If token not matched in this layer of existing tree.
+            # if token not matched in this layer of existing tree.
             if token not in parent_node.key_to_child_node:
                 if not self.has_numbers(token):
                     if param_str in parent_node.key_to_child_node:
@@ -169,7 +171,7 @@ class Drain:
                     else:
                         parent_node = parent_node.key_to_child_node[param_str]
 
-            # If the token is matched
+            # if the token is matched
             else:
                 parent_node = parent_node.key_to_child_node[token]
 
@@ -233,21 +235,21 @@ class Drain:
 
         return ret_val
 
-    def print_tree(self):
-        self.print_node("root", self.root_node, 0)
+    def print_tree(self, file=None):
+        self.print_node("root", self.root_node, 0, file)
 
-    def print_node(self, token, node, depth):
-        out_str =  '\t' * depth
+    def print_node(self, token, node, depth, file):
+        out_str = '\t' * depth
 
         if depth < 2:
             out_str += '<' + str(token) + '>'
         else:
             out_str += token
 
-        print(out_str)
+        print(out_str, file=file)
 
         for token, child in node.key_to_child_node.items():
-            self.print_node(token, child, depth + 1)
+            self.print_node(token, child, depth + 1, file)
 
     def add_log_message(self, content: str):
         content = content.strip()

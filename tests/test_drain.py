@@ -1,4 +1,5 @@
 import unittest
+
 from drain3.drain import Drain
 
 
@@ -129,20 +130,20 @@ class DrainTest(unittest.TestCase):
             "A B format 3",
         ]
         expected = [
-            "A A foramt 1", # LRU = ["A"]
-            "A A foramt <*>",# LRU = ["A"]
+            "A A foramt 1",  # LRU = ["A"]
+            "A A foramt <*>",  # LRU = ["A"]
             # Use "A A" prefix to make sure both "A" and "A A" clusters end up
             # in the same leaf node. This is a setup for an interesting edge
             # case.
-            "A B format 1", # LRU = ["AA", "A"]
-            "A B format <*>",# LRU = ["AA", "A"]
-            "B format 1", # LRU = ["B", "A A", "A"]
-            "B format <*>", # LRU = ["B", "A A", "A"]
-            "A A foramt <*>", # LRU = ["A", "B", "A A"]
-            "C foramt 1", # LRU = ["C", "A", "B"]
+            "A B format 1",  # LRU = ["AA", "A"]
+            "A B format <*>",  # LRU = ["AA", "A"]
+            "B format 1",  # LRU = ["B", "A A", "A"]
+            "B format <*>",  # LRU = ["B", "A A", "A"]
+            "A A foramt <*>",  # LRU = ["A", "B", "A A"]
+            "C foramt 1",  # LRU = ["C", "A", "B"]
             # Cluster "A A" should have been removed in the previous step, thus,
             # it should be recognized as a new cluster with no slots.
-            "A B format 3", # LRU = ["A A', "C", "A"]
+            "A B format 3",  # LRU = ["A A', "C", "A"]
         ]
         actual = []
 
@@ -152,3 +153,10 @@ class DrainTest(unittest.TestCase):
 
         self.assertListEqual(list(map(str.strip, expected)), actual)
         self.assertEqual(5, model.get_total_cluster_size())
+
+    def test_one_token_message(self):
+        model = Drain()
+        cluster, change_type = model.add_log_message("oneTokenMessage")
+        self.assertEqual("cluster_created", change_type, "1st check")
+        cluster, change_type = model.add_log_message("oneTokenMessage")
+        self.assertEqual("none", change_type, "2nd check")

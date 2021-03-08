@@ -34,7 +34,7 @@ project by LogPAI from Python 2.7 to Python 3.6 or later with some bug-fixes and
 
 Read more information about Drain from the following paper:
 
-- Pinjia He, Jieming Zhu, Zibin Zheng, and Michael R. Lyu. [Drain: An Online Log Parsing Approach with Fixed Depth Tree](http://jmzhu.logpai.com/pub/pjhe_icws2017.pdf), Proceedings of the 24th International Conference on Web Services (ICWS), 2017.
+- Pinjia He, Jieming Zhu, Zibin Zheng, and Michael R. Lyu. [Drain: An Online Log Parsing Approach with Fixed Depth Tree](https://pinjiahe.github.io/papers/ICWS17.pdf), Proceedings of the 24th International Conference on Web Services (ICWS), 2017.
 
 A possible Drain3 use case in this blog post: [Use open source Drain3 log-template mining project to monitor for network outages](https://developer.ibm.com/blogs/how-mining-log-templates-can-help-ai-ops-in-cloud-scale-data-centers).
 
@@ -109,7 +109,7 @@ IP is 12.12.12.12
 {"change_type": "cluster_created", "cluster_id": "A0013", "cluster_size": 1, "template_mined": "IP is <IP>", "cluster_count": 13}
 ```
 
-Note: template parameters that do not match custom masking are output as <*>
+Note: template parameters that do not match custom masking are output as `<*>`
 
 ## Persistence
 The persistence feature saves and loads a snapshot of Drain3 state in (compressed) json format. This feature adds restart resiliency
@@ -136,7 +136,7 @@ Snapshots are created in the following events:
 - `cluster_template_changed` - in any update of a template
 - `periodic` - after n minutes from the last snapshot. This is intended to save cluster sizes even if no new template was identified.  
 
-Drain3 currently supports 3 persistence modes:
+Drain3 currently supports the following persistence modes:
 
 - **Kafka** - The snapshot is saved in a dedicated topic used only for snapshots - the last message in this topic 
 is the last snapshot that will be loaded after restart.
@@ -147,6 +147,8 @@ to change Kafka endpoint (default is `localhost:9092`).
 - **Redis** - The snapshot is saved to a key in Redis database (contributed by @matabares).
 
 - **File** - The snapshot is saved to a file.
+
+- **Memory** - The snapshot is saved an in-memory object.
 
 - **None** - No persistence.
 
@@ -198,6 +200,27 @@ An example drain3.ini file with masking instructions exists in the `examples` fo
 Our project welcomes external contributions. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for further details.
 
 ## Change Log
+
+##### v0.9.3
+* Fixed: comparison of type int with type str in function `add_seq_to_prefix_tree` #28
+  (bug introduced at v0.9.1)
+
+##### v0.9.2
+* Updated jsonpickle version
+* Keys `id_to_cluster` dict are now persisted by jsonpickle 
+  as `int` instead of `str` to avoid keys type conversion on load snapshot
+  which caused some issues.
+* Added cachetools dependency to `setup.py`.
+
+##### v0.9.1
+* Added option to configure `TemplateMiner` using a configuration object
+  (without `.ini` file).
+* Support for `print_tree()` to a file/stream.
+* Added `MemoryBufferPersistence`
+* Added unit tests for state save/load.
+* Bug fix: missing type-conversion in state loading, introduced in v0.9.0   
+* Refactor: Drain prefix tree keys are now of type `str` also for 1st level 
+  (was `int` before), for type consistency. 
 
 ##### v0.9.0
 * Decrease memory footprint of the main data structures.
