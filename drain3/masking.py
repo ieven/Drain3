@@ -16,7 +16,7 @@ class MaskingInstruction:
         self.regex_pattern = regex_pattern
         self.mask_with = mask_with
         self.regex = re.compile(regex_pattern)
-        self.mask_with_wrapped = "<" + mask_with + ">"
+        self.mask_with_wrapped = "[" + mask_with + "]"
 
 
 class RegexMasker:

@@ -15,7 +15,7 @@ from cachetools import LRUCache
 from drain3.drain import Drain
 from drain3.masking import LogMasker
 from drain3.persistence_handler import PersistenceHandler
-from drain3.simple_profiler import SimpleProfiler, NullProfiler, Profiler
+from drain3.simple_profiler import NullProfiler, Profiler, SimpleProfiler
 from drain3.template_miner_config import TemplateMinerConfig
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class TemplateMiner:
 
     def __init__(self,
                  persistence_handler: PersistenceHandler = None,
-                 config: TemplateMinerConfig = None):
+                 config_filename: str = 'config/drain3.ini'):
         """
         Wrapper for Drain with persistence and masking support
 
@@ -36,10 +36,9 @@ class TemplateMiner:
         """
         logger.info("Starting Drain3 template miner")
 
-        if config is None:
-            logger.info(f"Loading configuration from {config_filename}")
-            config = TemplateMinerConfig()
-            config.load(config_filename)
+        logger.info(f"Loading configuration from {config_filename}")
+        config = TemplateMinerConfig()
+        config.load(config_filename)
 
         self.config = config
 
@@ -79,7 +78,8 @@ class TemplateMiner:
         # this is only relevant for backwards compatibility when loading a snapshot of drain <= v0.9.1
         # which did not use json-pickle's keys=true
         if len(drain.id_to_cluster) > 0 and isinstance(next(iter(drain.id_to_cluster.keys())), str):
-            drain.id_to_cluster = {int(k): v for k, v in list(drain.id_to_cluster.items())}
+            drain.id_to_cluster = {
+                int(k): v for k, v in list(drain.id_to_cluster.items())}
             if self.config.drain_max_clusters:
                 cache = LRUCache(maxsize=self.config.drain_max_clusters)
                 cache.update(drain.id_to_cluster)
@@ -131,7 +131,8 @@ class TemplateMiner:
 
         if self.persistence_handler is not None:
             self.profiler.start_section("save_state")
-            snapshot_reason = self.get_snapshot_reason(change_type, cluster.cluster_id)
+            snapshot_reason = self.get_snapshot_reason(
+                change_type, cluster.cluster_id)
             if snapshot_reason:
                 self.save_state(snapshot_reason)
                 self.last_save_time = time.time()

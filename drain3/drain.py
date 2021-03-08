@@ -4,13 +4,13 @@ Author      : LogPAI team
 Modified by : david.ohana@ibm.com, moshikh@il.ibm.com
 License     : MIT
 """
-from typing import List, Dict
+from typing import Dict, List
 
-from cachetools import LRUCache, Cache
+from cachetools import Cache, LRUCache
 
-from drain3.simple_profiler import Profiler, NullProfiler
+from drain3.simple_profiler import NullProfiler, Profiler
 
-param_str = '<*>'
+param_str = '[*]'
 
 
 class LogCluster:
@@ -56,7 +56,8 @@ class Drain:
                 with a new ones according to the LRU policy.
             extra_delimiters: delimiters to apply when splitting log message into words (in addition to whitespace).
         """
-        self.depth = depth - 2  # number of prefix tokens in each tree path (exclude root and leaf node)
+        self.depth = depth - \
+            2  # number of prefix tokens in each tree path (exclude root and leaf node)
         self.sim_th = sim_th
         self.max_children = max_children
         self.root_node = Node()
@@ -65,7 +66,8 @@ class Drain:
         self.max_clusters = max_clusters
 
         # key: int, value: LogCluster
-        self.id_to_cluster = {} if max_clusters is None else LRUCache(maxsize=max_clusters)
+        self.id_to_cluster = {} if max_clusters is None else LRUCache(
+            maxsize=max_clusters)
         self.clusters_counter = 0
 
     @property
@@ -208,7 +210,8 @@ class Drain:
             cluster = Cache.get(self.id_to_cluster, cluster_id)
             if cluster is None:
                 continue
-            cur_sim, param_count = self.get_seq_distance(cluster.log_template_tokens, tokens)
+            cur_sim, param_count = self.get_seq_distance(
+                cluster.log_template_tokens, tokens)
             if cur_sim > max_sim or (cur_sim == max_sim and param_count > max_param_count):
                 max_sim = cur_sim
                 max_param_count = param_count
@@ -279,7 +282,8 @@ class Drain:
         else:
             if self.profiler:
                 self.profiler.start_section("cluster_exist")
-            new_template_tokens = self.get_template(content_tokens, match_cluster.log_template_tokens)
+            new_template_tokens = self.get_template(
+                content_tokens, match_cluster.log_template_tokens)
             if ' '.join(new_template_tokens) != ' '.join(match_cluster.log_template_tokens):
                 match_cluster.log_template_tokens = tuple(new_template_tokens)
                 update_type = "cluster_template_changed"
